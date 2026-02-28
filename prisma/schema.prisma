@@ -1,0 +1,144 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Пользователи ───────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  MANAGER
+  WORKER
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  telegramId   BigInt    @unique @map("telegram_id")
+  username     String?
+  firstName    String    @map("first_name")
+  lastName     String?   @map("last_name")
+  role         Role      @default(WORKER)
+  isActive     Boolean   @default(true) @map("is_active")
+  addedBy      Int?      @map("added_by")
+  addedByUser  User?     @relation("AddedBy", fields: [addedBy], references: [id])
+  addedUsers   User[]    @relation("AddedBy")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  workDays     WorkDay[]
+
+  @@map("users")
+}
+
+// ─── Рабочий день ───────────────────────────────────────────────
+
+enum DayType {
+  WORK
+  DAY_OFF
+}
+
+model WorkDay {
+  id        Int       @id @default(autoincrement())
+  userId    Int       @map("user_id")
+  user      User      @relation(fields: [userId], references: [id])
+  date      DateTime  @db.Date
+  type      DayType   @default(WORK)
+  startedAt DateTime? @map("started_at")
+  endedAt   DateTime? @map("ended_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  tasks     Task[]
+
+  @@unique([userId, date])
+  @@map("work_days")
+}
+
+// ─── Задания (ТЗ) ───────────────────────────────────────────────
+
+enum TaskStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model Task {
+  id            Int        @id @default(autoincrement())
+  workDayId     Int        @map("work_day_id")
+  workDay       WorkDay    @relation(fields: [workDayId], references: [id])
+  taskNumber    String     @map("task_number") // номер ТЗ
+  description   String?
+  status        TaskStatus @default(IN_PROGRESS)
+  startedAt     DateTime   @default(now()) @map("started_at")
+  completedAt   DateTime?  @map("completed_at")
+  
+  // Результаты подсчёта эффективности
+  totalMinutes  Int?       @map("total_minutes")
+  normMinutes   Int?       @map("norm_minutes")
+  efficiency    Float?     // % от нормы (100% = точно по норме)
+
+  operations    Operation[]
+
+  @@map("tasks")
+}
+
+// ─── Операции шелкографии ────────────────────────────────────────
+
+enum OperationType {
+  // Создание печатной формы
+  EMULSION_POUR        // Поливка эмульсией
+  EXPOSURE             // Засветка
+  DRYING               // Просушка (опционально)
+  FIXING               // Закрепление (опционально)
+  // Настройка
+  SETUP_SEMIAUTO       // Настройка полуавтомат
+  SETUP_MANUAL         // Настройка ручная
+  // Печать
+  PRINTING             // Печать
+  // Завершение
+  WASHING              // Замывка
+  INK_MIXING           // Замес краски
+  SCREEN_WASHING       // Смывка печатной формы
+}
+
+model Operation {
+  id            Int           @id @default(autoincrement())
+  taskId        Int           @map("task_id")
+  task          Task          @relation(fields: [taskId], references: [id])
+  type          OperationType
+  isOptional    Boolean       @default(false) @map("is_optional")
+  startedAt     DateTime?     @map("started_at")
+  completedAt   DateTime?     @map("completed_at")
+  durationSec   Int?          @map("duration_sec") // фактически затраченное время (сек)
+  
+  // Для печати
+  impressions   Int?          // количество оттисков
+  
+  // Комментарий (последняя операция — общий комментарий)
+  comment       String?
+
+  norm          OperationNorm? @relation(fields: [type], references: [type])
+
+  @@map("operations")
+}
+
+// ─── Нормы ──────────────────────────────────────────────────────
+
+model OperationNorm {
+  type          OperationType @id
+  label         String        // Человекочитаемое название
+  normSeconds   Int           @map("norm_seconds") // базовая норма в секундах
+  // Для масштабируемых норм (например печать per 100 оттисков)
+  perUnit       Int?          @map("per_unit")     // на сколько единиц норма
+  unitLabel     String?       @map("unit_label")   // "оттисков"
+  description   String?
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  operations    Operation[]
+
+  @@map("operation_norms")
+}

@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: printtrack-api
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npm run build && npx prisma migrate deploy && npx tsx prisma/seed.ts
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: PORT
+        value: 3001
+    healthCheckPath: /health
