@@ -26,6 +26,7 @@
     "@types/node": "^20.11.17"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "schema": "../prisma/schema.prisma"
   }
 }
