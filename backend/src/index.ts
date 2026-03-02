@@ -14,7 +14,13 @@ import { startBot } from './bot.js'
 async function main() {
   const app = Fastify({ logger: true })
 
-  await app.register(cors, { origin: true, credentials: true })
+  await app.register(cors, {
+  origin: [
+    'https://printtrack-2pta.vercel.app',
+    'http://localhost:5173',
+  ],
+  credentials: true,
+})
   await app.register(jwt, {
     secret: process.env.JWT_SECRET || 'change-this-secret',
   })
