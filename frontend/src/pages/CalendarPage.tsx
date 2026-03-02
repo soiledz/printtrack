@@ -28,6 +28,7 @@ export function CalendarPage() {
     setLoading(true)
     try {
       const { data } = await api.get(`/calendar/${year}/${month}`)
+      console.log('Loaded work days:', data)
       setWorkDays(data)
     } catch (e) {
       console.error(e)

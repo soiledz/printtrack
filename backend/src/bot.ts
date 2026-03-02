@@ -94,6 +94,10 @@ export async function startBot() {
     await ctx.reply('✅ Вы назначены администратором системы PrintTrack!')
   })
 
+  bot.catch((err) => {
+    console.error('Bot error:', err.message)
+  })
+
   bot.start()
   return bot
 }
