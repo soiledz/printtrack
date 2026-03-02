@@ -18,7 +18,7 @@ api.interceptors.response.use(
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('pt_token')
-      window.location.reload()
+      // убираем автоперезагрузку
     }
     return Promise.reject(err)
   }
